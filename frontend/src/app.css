@@ -1,0 +1,32 @@
+.container {
+    font-family: sans-serif;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.fullwidth {
+    width: 100%;
+}
+
+.textarea {
+    width: 100%;
+}
+
+.mt12 {
+    margin-top: 12px;
+}
+
+.mt16 {
+    margin-top: 16px;
+}
+
+.response {
+    white-space: pre-wrap;
+}
