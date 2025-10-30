@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import json
@@ -8,6 +9,15 @@ from openai import OpenAI
 load_dotenv(override=True) 
 
 app = FastAPI()
+
+# Add CORS middleware for frontend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # OpenAI configuration
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -73,8 +83,12 @@ async def chat(request: ChatRequest):
 
     return {"response": content}
 
+@app.get("/")
+async def root():
+    return {"message": "Break The Prompt API is running! Ready for OpenAI integration."}
+
 # Start the server via `python server.py`
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8081)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
  
