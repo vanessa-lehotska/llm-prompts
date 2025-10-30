@@ -20,8 +20,8 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_message: userInput, difficulty }),
       })
-      const text = await res.text()
-      setResponse(text || `HTTP ${res.status}`)
+      const data = await res.json()
+      setResponse(data.response)
     } catch (e: any) {
       setResponse(String(e))
     } finally {
