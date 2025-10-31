@@ -21,16 +21,47 @@ export default function App() {
         body: JSON.stringify({ user_message: userInput, difficulty }),
       })
       const data = await res.json()
+      
+      // Display AI response
       setResponse(data.response)
+      
+      // Check if user found the secret and should advance
+      if (data.level_up && data.next_level) {
+        setTimeout(() => {
+          setDifficulty(data.next_level)
+          setUserInput('')
+          // Show level up message briefly
+          setResponse(prev => prev + '\n\n🚀 Advancing to next level...')
+        }, 2000) // Wait 2 seconds to let user read the success message
+      }
+      
+      if (data.game_completed) {
+        setTimeout(() => {
+          setResponse(prev => prev + '\n\n🎊 Game completed! You are a prompt breaking master!')
+        }, 2000)
+      }
+      
     } catch (e: any) {
-      setResponse(String(e))
+      setResponse(`Error: ${String(e)}`)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start p-6 bg-[#0a0a0a] relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-start p-6 relative overflow-hidden">
+      {/* Floating particles background */}
+      <div className="particles">
+        <div className="particle" style={{ top: '15%', left: '10%' }}></div>
+        <div className="particle" style={{ top: '25%', left: '80%' }}></div>
+        <div className="particle" style={{ top: '45%', left: '15%' }}></div>
+        <div className="particle" style={{ top: '65%', left: '70%' }}></div>
+        <div className="particle" style={{ top: '80%', left: '25%' }}></div>
+        <div className="particle" style={{ top: '35%', left: '90%' }}></div>
+        <div className="particle" style={{ top: '75%', left: '85%' }}></div>
+        <div className="particle" style={{ top: '55%', left: '5%' }}></div>
+      </div>
+
       <Header />
       <LevelSelector difficulty={difficulty} setDifficulty={setDifficulty} />
       <PromptInput

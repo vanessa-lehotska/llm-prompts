@@ -2,23 +2,99 @@
 
 /* Custom CSS Variables for Tailwind v4 */
 @theme {
-  --color-neon: #00ff9c;
-  --color-dark: #0a0a0a;
-  --color-matrix: #0f3b24;
+  --color-cyber-primary: #3B82F6;     /* Blue */
+  --color-cyber-secondary: #8B5CF6;   /* Purple */
+  --color-cyber-accent: #06B6D4;      /* Cyan */
+  --color-cyber-warning: #F59E0B;     /* Orange */
+  --color-cyber-success: #10B981;     /* Green */
+  --color-cyber-text: #F1F5F9;        /* Light gray */
+  --color-cyber-subtext: #94A3B8;     /* Medium gray */
+  --color-cyber-bg: #0F172A;          /* Very dark blue */
+  --color-cyber-card: #1E293B;        /* Dark blue-gray */
   
-  --color-astra-bg: #0b0e10;
-  --color-astra-primary: #00C2FF;
-  --color-astra-secondary: #C77DFF;
-  --color-astra-success: #6EE7B7;
-  --color-astra-warning: #FFD166;
-  --color-astra-text: #E6EEF3;
-  --color-astra-subtext: #9AA7B2;
+  /* Legacy colors for compatibility */
+  --color-neon: #3B82F6;
+  --color-dark: #0F172A;
+  --color-matrix: #1E293B;
 }
 
 /* Base styles */
 body {
-  background-color: var(--color-dark);
-  color: var(--color-neon);
+  background: 
+    radial-gradient(ellipse at top, rgba(59,130,246,0.3), transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(139,92,246,0.2), transparent 50%),
+    linear-gradient(135deg, var(--color-cyber-bg), #1E293B);
+  color: var(--color-cyber-text);
   font-family: 'JetBrains Mono', monospace;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Floating particles animation */
+@keyframes float {
+  0%, 100% { 
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.4;
+  }
+  50% { 
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0.8;
+  }
+}
+
+@keyframes float-reverse {
+  0%, 100% { 
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.3;
+  }
+  50% { 
+    transform: translateY(20px) translateX(-10px);
+    opacity: 0.7;
+  }
+}
+
+/* Particles container */
+.particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(circle, rgba(59,130,246,0.8), transparent);
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite;
+}
+
+.particle:nth-child(2) {
+  background: radial-gradient(circle, rgba(139,92,246,0.6), transparent);
+  animation: float-reverse 8s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+.particle:nth-child(3) {
+  background: radial-gradient(circle, rgba(6,182,212,0.7), transparent);
+  animation: float 10s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+.particle:nth-child(4) {
+  background: radial-gradient(circle, rgba(59,130,246,0.5), transparent);
+  animation: float-reverse 7s ease-in-out infinite;
+  animation-delay: -1s;
+}
+
+.particle:nth-child(5) {
+  background: radial-gradient(circle, rgba(139,92,246,0.8), transparent);
+  animation: float 9s ease-in-out infinite;
+  animation-delay: -3s;
 }
 
