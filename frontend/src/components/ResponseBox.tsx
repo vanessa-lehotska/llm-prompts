@@ -1,8 +1,8 @@
-import { motion } from 'framer-motion'
+import { motion } from "framer-motion";
 
 type Props = {
-  response: string
-}
+  response: string;
+};
 
 export default function ResponseBox({ response }: Props) {
   return (
@@ -13,7 +13,7 @@ export default function ResponseBox({ response }: Props) {
       animate={{ opacity: response ? 1 : 0, y: response ? 0 : 20 }}
       transition={{ duration: 0.5 }}
     >
-      {response || 'AI response will appear here...'}
+      {response}
     </motion.pre>
-  )
+  );
 }
