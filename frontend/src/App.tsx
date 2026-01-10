@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import HomeScreen from './components/HomeScreen'
-import PromptInjectionMode from './components/PromptInjectionMode'
+import HomeScreen from './screens/HomeScreen'
+import PromptInjectionMode from './screens/PromptInjectionMode'
 
 type Mode = 'home' | 'prompt_injection' | 'jailbreaking' | 'automated_testing'
 

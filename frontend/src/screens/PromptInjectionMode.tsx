@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import Header from "./Header";
-import LevelSelector from "./LevelSelector";
-import PromptInput from "./PromptInput";
-import ResponseBox from "./ResponseBox";
-import ParticlesBackground from "./ParticlesBackground";
-import Confetti from "./Confetti";
+import Header from "../components/Header";
+import LevelSelector from "../components/LevelSelector";
+import PromptInput from "../components/PromptInput";
+import ResponseBox from "../components/ResponseBox";
+import ParticlesBackground from "../components/ParticlesBackground";
+import Confetti from "../components/Confetti";
 
 type Props = {
   onBack: () => void;

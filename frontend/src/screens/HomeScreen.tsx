@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import injectionIcon from '../assets/images/injection.png'
 import jailbreakingIcon from '../assets/images/jailbreak.png'
 import testingIcon from '../assets/images/automated_test.png'
-import ParticlesBackground from './ParticlesBackground'
+import ParticlesBackground from '../components/ParticlesBackground'
 
 type Props = {
   onSelectMode: (mode: 'prompt_injection' | 'jailbreaking' | 'automated_testing') => void
