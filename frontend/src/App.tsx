@@ -1,76 +1,63 @@
 import React, { useState } from 'react'
-import Header from './components/Header'
-import LevelSelector from './components/LevelSelector'
-import PromptInput from './components/PromptInput'
-import ResponseBox from './components/ResponseBox'
+import HomeScreen from './components/HomeScreen'
+import PromptInjectionMode from './components/PromptInjectionMode'
+
+type Mode = 'home' | 'prompt_injection' | 'jailbreaking' | 'automated_testing'
 
 export default function App() {
-  const [difficulty, setDifficulty] = useState(1)
-  const [userInput, setUserInput] = useState('')
-  const [response, setResponse] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [currentMode, setCurrentMode] = useState<Mode>('home')
 
-  async function send() {
-    if (!userInput.trim()) return
-    setLoading(true)
-    setResponse('')
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_message: userInput, difficulty }),
-      })
-      const data = await res.json()
-      
-      // Display AI response
-      setResponse(data.response)
-      
-      // Check if user found the secret and should advance
-      if (data.level_up && data.next_level) {
-        setTimeout(() => {
-          setDifficulty(data.next_level)
-          setUserInput('')
-          // Show level up message briefly
-          setResponse(prev => prev + '\n\n🚀 Advancing to next level...')
-        }, 2000) // Wait 2 seconds to let user read the success message
-      }
-      
-      if (data.game_completed) {
-        setTimeout(() => {
-          setResponse(prev => prev + '\n\n🎊 Game completed! You are a prompt breaking master!')
-        }, 2000)
-      }
-      
-    } catch (e: any) {
-      setResponse(`Error: ${String(e)}`)
-    } finally {
-      setLoading(false)
-    }
+  const handleModeSelect = (mode: 'prompt_injection' | 'jailbreaking' | 'automated_testing') => {
+    setCurrentMode(mode)
   }
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-start p-6 relative overflow-hidden">
-      {/* Floating particles background */}
-      <div className="particles">
-        <div className="particle" style={{ top: '15%', left: '10%' }}></div>
-        <div className="particle" style={{ top: '25%', left: '80%' }}></div>
-        <div className="particle" style={{ top: '45%', left: '15%' }}></div>
-        <div className="particle" style={{ top: '65%', left: '70%' }}></div>
-        <div className="particle" style={{ top: '80%', left: '25%' }}></div>
-        <div className="particle" style={{ top: '35%', left: '90%' }}></div>
-        <div className="particle" style={{ top: '75%', left: '85%' }}></div>
-        <div className="particle" style={{ top: '55%', left: '5%' }}></div>
-      </div>
+  const handleBackToHome = () => {
+    setCurrentMode('home')
+  }
 
-      <Header />
-      <LevelSelector difficulty={difficulty} setDifficulty={setDifficulty} />
-      <PromptInput
-        userInput={userInput}
-        setUserInput={setUserInput}
-        send={send}
-        loading={loading}
-      />
-      <ResponseBox response={response} />
-    </div>
-  )
+  // Render based on current mode
+  if (currentMode === 'home') {
+    return <HomeScreen onSelectMode={handleModeSelect} />
+  }
+
+  if (currentMode === 'prompt_injection') {
+    return <PromptInjectionMode onBack={handleBackToHome} />
+  }
+
+  // Placeholder for other modes (will be implemented in next phases)
+  if (currentMode === 'jailbreaking') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl text-slate-100 mb-4">Jailbreaking Arena</h1>
+          <p className="text-slate-400 mb-4">Coming soon...</p>
+          <button
+            onClick={handleBackToHome}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (currentMode === 'automated_testing') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl text-slate-100 mb-4">Automated Testing Lab</h1>
+          <p className="text-slate-400 mb-4">Coming soon...</p>
+          <button
+            onClick={handleBackToHome}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return null
 }
