@@ -2,10 +2,10 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from models import ChatRequest
+from models import ChatRequest, ComparisonRequest
 from config import load_config
 from utils.openai_client import get_model_name
-from handlers import prompt_injection, jailbreaking, automated_testing
+from handlers import prompt_injection, promptfoo_integration
 
 # Load configuration
 config = load_config()
@@ -46,15 +46,18 @@ async def chat(request: ChatRequest):
     # Route to appropriate handler based on mode
     if request.mode == "prompt_injection":
         return await prompt_injection.handle_prompt_injection(request, config)
-    elif request.mode == "jailbreaking":
-        return await jailbreaking.handle_jailbreaking(request, config)
-    elif request.mode == "automated_testing":
-        return await automated_testing.handle_automated_testing(request, config)
     else:
         raise HTTPException(
             status_code=400,
             detail=f"Unknown mode: {request.mode}"
         )
+
+
+@app.post("/api/promptfoo")
+async def run_promptfoo_tests(request: ComparisonRequest):
+    """Run Promptfoo tests to compare multiple prompts"""
+    print(f"Running Promptfoo tests for {len(request.prompts)} prompts...")
+    return await promptfoo_integration.handle_promptfoo_testing(request, config)
 
 
 @app.get("/api/levels")

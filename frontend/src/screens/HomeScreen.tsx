@@ -1,38 +1,29 @@
 import { motion } from 'framer-motion'
 import injectionIcon from '../assets/images/injection.png'
-import jailbreakingIcon from '../assets/images/jailbreak.png'
 import testingIcon from '../assets/images/automated_test.png'
 import ParticlesBackground from '../components/ParticlesBackground'
 
 type Props = {
-  onSelectMode: (mode: 'prompt_injection' | 'jailbreaking' | 'automated_testing') => void
+  onSelectMode: (mode: 'prompt_injection' | 'promptfoo') => void
 }
 
 export default function HomeScreen({ onSelectMode }: Props) {
   const modes = [
     {
       id: 'prompt_injection' as const,
-      title: 'Prompt Injection Challenge',
-      description: 'Test prompt injection attacks on LLM applications. Find the secret in each level using various techniques.',
+      title: 'GenAI Security Hack',
+      description: 'Test various attack techniques to discover secrets. Use prompt injection, jailbreaking, or any other method you choose.',
       icon: injectionIcon,
       color: 'blue',
-      levels: 5
+      levels: 6
     },
     {
-      id: 'jailbreaking' as const,
-      title: 'Jailbreaking Arena',
-      description: 'Test bypassing of model safety guardrails. Convince the model to do something it shouldn\'t.',
-      icon: jailbreakingIcon,
-      color: 'purple',
-      levels: 4
-    },
-    {
-      id: 'automated_testing' as const,
-      title: 'Automated Testing Lab',
-      description: 'Automated testing of LLM applications against an attack library. Find out how resistant your system prompt is.',
+      id: 'promptfoo' as const,
+      title: 'Red Team Testing Lab',
+      description: 'AI-powered security testing using Promptfoo. Automatically generate attacks to test your system prompt resistance.',
       icon: testingIcon,
-      color: 'cyan',
-      levels: 'Library'
+      color: 'red',
+      levels: 'AI Attacks'
     }
   ]
 
@@ -60,7 +51,7 @@ export default function HomeScreen({ onSelectMode }: Props) {
       </motion.p>
 
       {/* Mode Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl w-full z-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full z-10">
         {modes.map((mode, index) => (
           <motion.button
             key={mode.id}

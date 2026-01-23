@@ -1,13 +1,14 @@
 import React, { useState } from 'react'
 import HomeScreen from './screens/HomeScreen'
 import PromptInjectionMode from './screens/PromptInjectionMode'
+import PromptfooMode from './screens/PromptfooMode'
 
-type Mode = 'home' | 'prompt_injection' | 'jailbreaking' | 'automated_testing'
+type Mode = 'home' | 'prompt_injection' | 'promptfoo'
 
 export default function App() {
   const [currentMode, setCurrentMode] = useState<Mode>('home')
 
-  const handleModeSelect = (mode: 'prompt_injection' | 'jailbreaking' | 'automated_testing') => {
+  const handleModeSelect = (mode: 'prompt_injection' | 'promptfoo') => {
     setCurrentMode(mode)
   }
 
@@ -24,39 +25,8 @@ export default function App() {
     return <PromptInjectionMode onBack={handleBackToHome} />
   }
 
-  // Placeholder for other modes (will be implemented in next phases)
-  if (currentMode === 'jailbreaking') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl text-slate-100 mb-4">Jailbreaking Arena</h1>
-          <p className="text-slate-400 mb-4">Coming soon...</p>
-          <button
-            onClick={handleBackToHome}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Back to Home
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (currentMode === 'automated_testing') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl text-slate-100 mb-4">Automated Testing Lab</h1>
-          <p className="text-slate-400 mb-4">Coming soon...</p>
-          <button
-            onClick={handleBackToHome}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Back to Home
-          </button>
-        </div>
-      </div>
-    )
+  if (currentMode === 'promptfoo') {
+    return <PromptfooMode onBack={handleBackToHome} />
   }
 
   return null

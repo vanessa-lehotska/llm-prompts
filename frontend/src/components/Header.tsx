@@ -7,7 +7,7 @@ export default function Header() {
       animate={{ opacity: [0.7, 1, 0.7] }}
       transition={{ duration: 3, repeat: Infinity }}
     >
-      BREAK THE PROMPT
+      GenAI Security Hack
     </motion.h1>
   )
 }

@@ -7,3 +7,4 @@ aiohttp==3.10.10
 transformers
 torch
 dotenv
+pyyaml==6.0.1
