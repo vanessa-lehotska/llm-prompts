@@ -8,3 +8,4 @@ transformers
 torch
 dotenv
 pyyaml==6.0.1
+datasets
