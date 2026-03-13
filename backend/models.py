@@ -18,11 +18,10 @@ class ChatResponse(BaseModel):
     next_level: Optional[int] = None
     game_completed: bool = False
     defense: Optional[str] = None
-    learning: Optional[Dict[str, Any]] = None
 
 
 class AttackResult(BaseModel):
-    """Result of a single attack"""
+    """Result of a single attack from Promptfoo red teaming"""
     category: str
     attack: str
     response: str

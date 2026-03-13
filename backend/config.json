@@ -1,7 +1,6 @@
 {
   "modes": {
     "prompt_injection": {
-      "name": "GenAI Security Hack",
       "levels": {
         "1": {
           "secret": "SUNSHINE",

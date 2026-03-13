@@ -1,11 +1,15 @@
+# Web framework
 fastapi==0.115.0
 uvicorn==0.30.6
-python-dotenv==1.0.1
+
+# OpenAI API
 openai==1.52.0
-httpx==0.27.2
-aiohttp==3.10.10
-transformers
-torch
-dotenv
+
+# Environment variables
+python-dotenv==1.0.1
+
+# Promptfoo integration (YAML config generation)
 pyyaml==6.0.1
-datasets
+
+# Testing only - installed separately with: pip install datasets
+# datasets

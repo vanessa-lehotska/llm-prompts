@@ -43,7 +43,6 @@ async def chat(request: ChatRequest):
         f"User: {request.user_message[:50]}..."
     )
     
-    # Route to appropriate handler based on mode
     if request.mode == "prompt_injection":
         return await prompt_injection.handle_prompt_injection(request, config)
     else:
@@ -55,14 +54,14 @@ async def chat(request: ChatRequest):
 
 @app.post("/api/promptfoo")
 async def run_promptfoo_tests(request: ComparisonRequest):
-    """Run Promptfoo tests to compare multiple prompts"""
+    """Run Promptfoo red team tests to compare multiple prompts"""
     print(f"Running Promptfoo tests for {len(request.prompts)} prompts...")
     return await promptfoo_integration.handle_promptfoo_testing(request, config)
 
 
 @app.get("/api/levels")
 async def get_levels():
-    """Get all available game levels for prompt injection mode"""
+    """Get available game levels (without exposing secrets)"""
     mode_config = config.get("modes", {}).get("prompt_injection", {})
     levels_data = mode_config.get("levels", {})
     
@@ -70,9 +69,7 @@ async def get_levels():
     for level_id, level_data in levels_data.items():
         levels.append({
             "id": int(level_id),
-            "secret": level_data.get("secret", ""),
             "has_system_prompt": bool(level_data.get("systemPrompt", "")),
-            "info": level_data.get("info", ""),
             "defense": level_data.get("defense", "none")
         })
     
@@ -87,7 +84,6 @@ async def root():
     }
 
 
-# Start the server
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
