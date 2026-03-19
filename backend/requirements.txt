@@ -3,7 +3,7 @@ fastapi==0.115.0
 uvicorn==0.30.6
 
 # OpenAI API
-openai==1.52.0
+openai==1.62.0
 
 # Environment variables
 python-dotenv==1.0.1
