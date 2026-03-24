@@ -4,7 +4,7 @@ from typing import Dict, Any
 
 from models import ChatRequest, ChatResponse
 from config import get_mode_config, get_level_config
-from utils.defenses import sanitize_input, filter_response, check_secret_match
+from utils.defenses import filter_response, check_secret_match, detect_prompt_injection_attempt
 from utils.openai_client import call_openai_api
 
 
@@ -16,9 +16,9 @@ async def handle_prompt_injection(request: ChatRequest, config: Dict[str, Any]) 
     - Level 1: Minimal system prompt (no defense)
     - Level 2: Basic system prompt (clearer instructions)
     - Level 3: System prompt hardening (explicit warnings)
-    - Level 4: Input sanitization (Unicode normalization)
+    - Level 4: Input guard (heuristic prompt-injection detection)
     - Level 5: Response filtering (blocks secret in output)
-    - Level 6: Combined defense (all mechanisms)
+    - Level 6: Combined defense (input guard + response filtering)
     """
     mode_config = get_mode_config(config, "prompt_injection")
     if not mode_config:
@@ -33,10 +33,15 @@ async def handle_prompt_injection(request: ChatRequest, config: Dict[str, Any]) 
     secret = level_config.get("secret", "")
     defense = level_config.get("defense", "none")
     
-    # Apply input sanitization if defense requires it
+    # Apply input guard for obvious prompt-injection attempts
     user_message = request.user_message
-    if defense in ["input_sanitization", "combined"]:
-        user_message = sanitize_input(user_message)
+    if defense in ["input_guard", "combined"] and detect_prompt_injection_attempt(user_message):
+        return ChatResponse(
+            response="I cannot process instruction-manipulation requests.",
+            level_up=False,
+            current_level=request.difficulty,
+            defense=defense
+        )
     
     # Check if user found the secret
     if secret and check_secret_match(user_message, secret):

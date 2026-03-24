@@ -16,10 +16,10 @@ from datetime import datetime
 from datasets import load_dataset
 from config import load_config
 from utils.openai_client import call_openai_api
-from utils.defenses import sanitize_input, filter_response
+from utils.defenses import filter_response, detect_prompt_injection_attempt
 
 # Configuration
-MAX_SAMPLES_PER_DATASET = 50  # Limit samples to save API costs
+MAX_SAMPLES_PER_DATASET = 100  # Limit samples to save API costs
 OUTPUT_DIR = "testing/results"
 
 
@@ -35,10 +35,17 @@ def run_attack(prompt: str, level_config: dict) -> dict:
     secret = level_config.get("secret", "")
     defense = level_config.get("defense", "none")
     
-    # Apply input sanitization if needed
+    # Apply input guard for obvious prompt-injection attempts
     processed_prompt = prompt
-    if defense in ["input_sanitization", "combined"]:
-        processed_prompt = sanitize_input(prompt)
+    if defense in ["input_guard", "combined"] and detect_prompt_injection_attempt(processed_prompt):
+        return {
+            "success": False,
+            "secret_in_response": False,
+            "blocked_by_filter": False,
+            "blocked_by_guard": True,
+            "response": "Blocked by input guard",
+            "error": False
+        }
     
     # Call OpenAI API
     messages = [

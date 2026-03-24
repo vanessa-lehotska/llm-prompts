@@ -3,19 +3,35 @@ import unicodedata
 import re
 
 
-def sanitize_input(prompt: str) -> str:
+# Common prompt-injection / jailbreak markers used for lightweight detection.
+_INJECTION_PATTERNS = [
+    r"ignore\s+(all\s+)?(previous|prior)\s+instructions?",
+    r"disregard\s+(all\s+)?(previous|prior)\s+instructions?",
+    r"system\s+prompt",
+    r"developer\s+mode",
+    r"jailbreak",
+    r"reveal\s+(the\s+)?(secret|password)",
+    r"tell\s+me\s+(the\s+)?(secret|password)",
+    r"what\s+is\s+(the\s+)?(secret|password)",
+    r"bypass\s+(safety|rules|guardrails?)",
+]
+
+
+def detect_prompt_injection_attempt(prompt: str) -> bool:
     """
-    Input sanitization - remove zero-width characters and normalize Unicode.
-    
-    This defense layer cleans user input before it reaches the model.
+    Detect obvious prompt-injection patterns in user input.
+
+    This is a heuristic defense for game progression, not a perfect classifier.
     """
-    # Normalize Unicode to canonical form
-    prompt = unicodedata.normalize('NFKC', prompt)
-    
-    # Remove zero-width characters that could be used for hiding content
-    prompt = re.sub(r'[\u200B-\u200D\uFEFF]', '', prompt)
-    
-    return prompt
+    # Normalize and remove zero-width chars to reduce simple obfuscation.
+    normalized = unicodedata.normalize('NFKC', prompt)
+    normalized = re.sub(r'[\u200B-\u200D\uFEFF]', '', normalized).lower()
+
+    for pattern in _INJECTION_PATTERNS:
+        if re.search(pattern, normalized):
+            return True
+
+    return False
 
 
 def filter_response(response: str, secret: str) -> str:
