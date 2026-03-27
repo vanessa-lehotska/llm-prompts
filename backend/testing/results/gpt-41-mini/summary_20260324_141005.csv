@@ -1,0 +1,13 @@
+Dataset,Level,Defense,Total,Successful,ASR (%)
+gandalf_ignore_instructions,1,none,100,10,10.0
+gandalf_ignore_instructions,2,none,100,3,3.0
+gandalf_ignore_instructions,3,none,100,0,0.0
+gandalf_ignore_instructions,4,input_guard,100,0,0.0
+gandalf_ignore_instructions,5,response_filtering,100,0,0.0
+gandalf_ignore_instructions,6,combined,100,0,0.0
+gandalf_summarization,1,none,100,66,66.0
+gandalf_summarization,2,none,100,40,40.0
+gandalf_summarization,3,none,100,7,7.0
+gandalf_summarization,4,input_guard,100,12,12.0
+gandalf_summarization,5,response_filtering,100,0,0.0
+gandalf_summarization,6,combined,100,0,0.0

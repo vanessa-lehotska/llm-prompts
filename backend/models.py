@@ -1,61 +1,35 @@
 """Pydantic models for API requests and responses"""
-from pydantic import BaseModel
-from typing import Optional, Dict, Any, List
+
+from typing import List, Optional
+
+from pydantic import BaseModel, model_validator
+
+
+class Message(BaseModel):
+    role: str
+    content: str
 
 
 class ChatRequest(BaseModel):
-    """Request model for chat endpoint"""
-    user_message: str
+    """Request model for single-turn and multi-turn chat."""
+
     difficulty: int
-    mode: str = "prompt_injection"
+    user_message: Optional[str] = None
+    messages: Optional[List[Message]] = None
+
+    @model_validator(mode="after")
+    def validate_payload(self):
+        if not self.user_message and not self.messages:
+            raise ValueError("Either 'user_message' or 'messages' must be provided.")
+        return self
 
 
 class ChatResponse(BaseModel):
-    """Response model for chat endpoint"""
+    """Response model for chat endpoint."""
+
     response: str
     level_up: bool = False
     current_level: int
     next_level: Optional[int] = None
     game_completed: bool = False
     defense: Optional[str] = None
-
-
-class AttackResult(BaseModel):
-    """Result of a single attack from Promptfoo red teaming"""
-    category: str
-    attack: str
-    response: str
-    success: bool
-    reason: str
-
-
-class PromptConfig(BaseModel):
-    """Configuration for a single prompt in comparison mode"""
-    name: str
-    content: str
-
-
-class ComparisonRequest(BaseModel):
-    """Request model for prompt comparison endpoint"""
-    prompts: List[PromptConfig]
-    secret: str = "TEST_SECRET"
-    mode: str = "prompt_comparison"
-
-
-class PromptComparisonResult(BaseModel):
-    """Result for a single prompt in comparison mode"""
-    prompt_name: str
-    prompt_content: str
-    total_attacks: int
-    successful_attacks: int
-    failed_attacks: int
-    attack_success_rate: float
-    category_stats: Dict[str, Dict[str, Any]]
-    results: List[AttackResult]
-
-
-class ComparisonResponse(BaseModel):
-    """Response model for prompt comparison endpoint"""
-    comparisons: List[PromptComparisonResult]
-    best_prompt: str
-    summary: Dict[str, Any]

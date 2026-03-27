@@ -8,8 +8,5 @@ openai==1.62.0
 # Environment variables
 python-dotenv==1.0.1
 
-# Promptfoo integration (YAML config generation)
-pyyaml==6.0.1
-
 # Testing only - installed separately with: pip install datasets
 # datasets

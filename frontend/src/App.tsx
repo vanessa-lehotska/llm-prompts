@@ -1,33 +1,13 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import HomeScreen from './screens/HomeScreen'
-import PromptInjectionMode from './screens/PromptInjectionMode'
-import PromptfooMode from './screens/PromptfooMode'
-
-type Mode = 'home' | 'prompt_injection' | 'promptfoo'
+import PromptInjectionScreen from './screens/PromptInjectionScreen'
 
 export default function App() {
-  const [currentMode, setCurrentMode] = useState<Mode>('home')
+  const [started, setStarted] = useState(false)
 
-  const handleModeSelect = (mode: 'prompt_injection' | 'promptfoo') => {
-    setCurrentMode(mode)
+  if (!started) {
+    return <HomeScreen onSelectMode={() => setStarted(true)} />
   }
 
-  const handleBackToHome = () => {
-    setCurrentMode('home')
-  }
-
-  // Render based on current mode
-  if (currentMode === 'home') {
-    return <HomeScreen onSelectMode={handleModeSelect} />
-  }
-
-  if (currentMode === 'prompt_injection') {
-    return <PromptInjectionMode onBack={handleBackToHome} />
-  }
-
-  if (currentMode === 'promptfoo') {
-    return <PromptfooMode onBack={handleBackToHome} />
-  }
-
-  return null
+  return <PromptInjectionScreen onBack={() => setStarted(false)} />
 }
