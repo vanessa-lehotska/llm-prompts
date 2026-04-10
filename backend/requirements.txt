@@ -5,6 +5,8 @@ uvicorn==0.30.6
 # OpenAI API
 openai==1.62.0
 
+anthropic
+
 # Environment variables
 python-dotenv==1.0.1
 

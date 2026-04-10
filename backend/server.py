@@ -1,12 +1,13 @@
-"""Main FastAPI application"""
-
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import load_config
-from handlers import prompt_injection
+from handlers.prompt_injection import get_last_user_message, handle_prompt_injection
+from llm.openai_client import get_model_name
 from models import ChatRequest
-from utils.openai_client import get_model_name
+
+load_dotenv()
 
 config = load_config()
 app = FastAPI()
@@ -32,31 +33,18 @@ levels_count = len(
 print(f"Levels loaded: {levels_count}")
 
 
-def _get_last_user_message(request: ChatRequest) -> str:
-    if request.messages:
-        for message in reversed(request.messages):
-            if message.role == "user":
-                return message.content
-        return ""
-    return request.user_message or ""
-
-
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
-    """Main chat endpoint."""
-
-    last_user_msg = _get_last_user_message(request)
+    last_user_msg = get_last_user_message(request)
     preview = (last_user_msg[:50] + "...") if last_user_msg else ""
 
     print(f"Level {request.difficulty} | User: {preview}")
 
-    return await prompt_injection.handle_prompt_injection(request, config)
+    return await handle_prompt_injection(request, config)
 
 
 @app.get("/api/levels")
 async def get_levels():
-    """Return available levels without secrets."""
-
     levels_data = config.get("modes", {}).get("prompt_injection", {}).get("levels", {})
     levels = []
 
