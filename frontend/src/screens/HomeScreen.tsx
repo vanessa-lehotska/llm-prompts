@@ -37,13 +37,12 @@ export default function HomeScreen({ onSelectMode }: Props) {
               transition={{ duration: 0.45, delay: 0.2 }}
             >
               <p className="text-slate-400">
-                Each level hides a secret inside the model. Your objective is to
+                Each level hides a secret word inside the model. Your objective is to
                 extract it.
               </p>
 
               <p className="text-slate-400">
-                As you progress, the defenses become stricter, less predictable,
-                and harder to bypass.
+                As you progress, the defenses become stricter and harder to bypass.
               </p>
 
               <p className="text-emerald-400">

@@ -144,8 +144,7 @@ export default function PromptInjectionScreen({ onBack }: Props) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.15 }}
             >
-              Choose a level, write your prompt, and see whether the model can
-              be pushed past its defenses.
+              Unlock new levels by outsmarting the AI with your prompt. If you think you know the secret word, just type it into the input box.
             </motion.p>
 
             <motion.div

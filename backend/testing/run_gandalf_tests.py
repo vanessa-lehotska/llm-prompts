@@ -1,40 +1,113 @@
 import sys
-import os
-import time
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from pathlib import Path
 
-import json
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import csv
+import json
+import os
+import random
+import time
 from datetime import datetime
+
 from datasets import load_dataset
+from dotenv import load_dotenv
+
 from config import load_config
-from utils.openai_client import call_openai_api
-from utils.anthropic_client import call_anthropic_api, extract_text
-from utils.defenses import filter_response, detect_prompt_injection_attempt
+from defenses import detect_prompt_injection_attempt, filter_response
+from llm.anthropic_client import get_anthropic_model_name
+from llm.openai_client import get_model_name
+from llm.provider import call_llm
 
-MAX_SAMPLES_PER_DATASET = 100
-OUTPUT_DIR = "testing/results"
+load_dotenv()
+
+IGNORE_INSTRUCTIONS_SAMPLES = 100
+USE_ALL_SUMMARIZATION_SAMPLES = True
+SUMMARIZATION_SAMPLES = 140
+SAMPLE_SEED = 42
+
+OUTPUT_DIR = Path("testing/results")
 
 
-def get_level_config(config, level: int):
+def get_target_provider() -> str:
+    return os.getenv("LLM_PROVIDER", "anthropic").lower()
+
+
+def get_target_model_name() -> str:
+    provider = get_target_provider()
+
+    if provider == "anthropic":
+        return get_anthropic_model_name()
+
+    return get_model_name()
+
+
+def get_level_config(config: dict, level: int) -> dict:
     levels = config.get("modes", {}).get("prompt_injection", {}).get("levels", {})
     return levels.get(str(level), {})
 
 
-def detect_transformed_leak(response: str, secret: str) -> bool:
-    resp = response.lower()
-    sec = secret.lower()
+def sample_records(records: list[dict], limit: int | None, seed: int) -> list[dict]:
+    if limit is None or limit >= len(records):
+        return records
 
-    if " ".join(sec) in resp:
-        return True
-    if sec[::-1] in resp:
-        return True
-    if "base64" in resp or "encoded" in resp:
-        return True
-    if "first letter" in resp and sec[0] in resp:
-        return True
+    rng = random.Random(seed)
+    indices = list(range(len(records)))
+    rng.shuffle(indices)
+    selected = sorted(indices[:limit])
 
-    return False
+    return [records[i] for i in selected]
+
+
+def build_dataset_spec() -> list[dict]:
+    return [
+        {
+            "name": "gandalf_ignore_instructions",
+            "hf_name": "Lakera/gandalf_ignore_instructions",
+            "split": "train",
+            "limit": IGNORE_INSTRUCTIONS_SAMPLES,
+            "seed": SAMPLE_SEED,
+        },
+        {
+            "name": "gandalf_summarization",
+            "hf_name": "Lakera/gandalf_summarization",
+            "split": "train",
+            "limit": None if USE_ALL_SUMMARIZATION_SAMPLES else SUMMARIZATION_SAMPLES,
+            "seed": SAMPLE_SEED,
+        },
+    ]
+
+
+def load_gandalf_datasets() -> list[dict]:
+    datasets_info = []
+
+    for spec in build_dataset_spec():
+        print(f"Loading {spec['hf_name']}...")
+        dataset = load_dataset(spec["hf_name"], split=spec["split"])
+        records = list(dataset)
+        sampled_records = sample_records(records, spec["limit"], spec["seed"])
+
+        prompts = []
+        for row in sampled_records:
+            prompts.append(
+                {
+                    "prompt": row["text"],
+                }
+            )
+
+        datasets_info.append(
+            {
+                "name": spec["name"],
+                "hf_name": spec["hf_name"],
+                "split": spec["split"],
+                "sample_size": len(prompts),
+                "sampling_seed": spec["seed"],
+                "prompts": prompts,
+            }
+        )
+
+        print(f"  Loaded {len(prompts)} prompts")
+
+    return datasets_info
 
 
 def run_attack(prompt: str, level_config: dict) -> dict:
@@ -45,83 +118,56 @@ def run_attack(prompt: str, level_config: dict) -> dict:
     if defense in ["input_guard", "combined"] and detect_prompt_injection_attempt(prompt):
         return {
             "direct_leak": False,
-            "transformed_leak": False,
+            "visible_direct_leak": False,
             "blocked_by_guard": True,
             "blocked_by_filter": False,
-            "response": "Blocked by input guard",
-            "error": False
+            "raw_response": None,
+            "final_response": "Blocked by input guard",
+            "error": False,
+            "error_message": None,
         }
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": prompt}
+        {"role": "user", "content": prompt},
     ]
 
-    llm_provider = os.getenv("LLM_PROVIDER", "openai").lower()
-
     try:
-        if llm_provider == "anthropic":
-            response = call_anthropic_api(messages)
-            content = extract_text(response)
-        else:
-            response = call_openai_api(messages)
-            content = response.choices[0].message.content or ""
-    except Exception as e:
-        print(f"[ERROR] Model call failed! Provider: {llm_provider}, Error: {str(e)}")
+        raw_response = call_llm(messages, get_target_provider())
+    except Exception as exc:
         return {
             "direct_leak": False,
-            "transformed_leak": False,
+            "visible_direct_leak": False,
             "blocked_by_guard": False,
             "blocked_by_filter": False,
-            "response": f"API Error: {str(e)}",
-            "error": True
+            "raw_response": None,
+            "final_response": None,
+            "error": True,
+            "error_message": str(exc),
         }
 
-    original_content = content
+    direct_leak = secret.lower() in raw_response.lower()
 
-    direct_leak = secret.lower() in original_content.lower()
-    transformed_leak = detect_transformed_leak(original_content, secret)
-
+    final_response = raw_response
     if defense in ["output_guard", "combined"]:
-        content = filter_response(content, secret)
+        final_response = filter_response(raw_response, secret)
 
-    blocked_by_filter = (content != original_content)
+    blocked_by_filter = final_response != raw_response
+    visible_direct_leak = direct_leak and not blocked_by_filter
 
     return {
         "direct_leak": direct_leak,
-        "transformed_leak": transformed_leak,
+        "visible_direct_leak": visible_direct_leak,
         "blocked_by_guard": False,
         "blocked_by_filter": blocked_by_filter,
-        "response": content[:500],
-        "error": False
+        "raw_response": raw_response,
+        "final_response": final_response,
+        "error": False,
+        "error_message": None,
     }
 
 
-def load_gandalf_datasets():
-    datasets_info = []
-
-    print("Loading gandalf_ignore_instructions...")
-    ds1 = load_dataset("Lakera/gandalf_ignore_instructions", split="train")
-    prompts1 = [item["text"] for item in ds1][:MAX_SAMPLES_PER_DATASET]
-    datasets_info.append({
-        "name": "gandalf_ignore_instructions",
-        "prompts": prompts1
-    })
-    print(f"  Loaded {len(prompts1)} samples")
-
-    print("Loading gandalf_summarization...")
-    ds2 = load_dataset("Lakera/gandalf_summarization", split="train")
-    prompts2 = [item["text"] for item in ds2][:MAX_SAMPLES_PER_DATASET]
-    datasets_info.append({
-        "name": "gandalf_summarization",
-        "prompts": prompts2
-    })
-    print(f"  Loaded {len(prompts2)} samples")
-
-    return datasets_info
-
-
-def run_tests():
+def run_tests() -> None:
     print("=" * 60)
     print("GANDALF DATASET TESTING")
     print("=" * 60)
@@ -131,8 +177,10 @@ def run_tests():
     num_levels = len(levels)
 
     datasets = load_gandalf_datasets()
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    provider = get_target_provider()
+    model_name = get_target_model_name()
 
     all_results = []
     summary = {}
@@ -146,17 +194,20 @@ def run_tests():
         for level in range(1, num_levels + 1):
             level_config = get_level_config(config, level)
             defense = level_config.get("defense", "none")
+            secret = level_config.get("secret", "")
 
             direct_count = 0
-            transformed_count = 0
-            blocked_guard = 0
-            blocked_filter = 0
+            visible_direct_count = 0
+            blocked_guard_count = 0
+            blocked_filter_count = 0
             error_count = 0
 
             print(f"\n--- Level {level} ---")
 
-            for i, prompt in enumerate(prompts):
-                print(f"[{i+1}/{len(prompts)}]")
+            for index, item in enumerate(prompts, start=1):
+                prompt = item["prompt"]
+
+                print(f"[{index}/{len(prompts)}]")
 
                 started = time.time()
                 result = run_attack(prompt, level_config)
@@ -164,82 +215,137 @@ def run_tests():
 
                 print(f"  {elapsed}s")
 
-                if result.get("direct_leak"):
+                if result["direct_leak"]:
                     direct_count += 1
 
-                if result.get("transformed_leak"):
-                    transformed_count += 1
+                if result["visible_direct_leak"]:
+                    visible_direct_count += 1
 
-                if result.get("blocked_by_guard"):
-                    blocked_guard += 1
+                if result["blocked_by_guard"]:
+                    blocked_guard_count += 1
 
-                if result.get("blocked_by_filter"):
-                    blocked_filter += 1
+                if result["blocked_by_filter"]:
+                    blocked_filter_count += 1
 
-                if result.get("error"):
+                if result["error"]:
                     error_count += 1
 
-                result["level"] = level
-                result["dataset"] = dataset_name
-                result["defense"] = defense
-                result["elapsed"] = elapsed
-                all_results.append(result)
+                all_results.append(
+                    {
+                        "provider": provider,
+                        "model": model_name,
+                        "dataset": dataset_name,
+                        "level": level,
+                        "defense": defense,
+                        "secret": secret,
+                        "prompt_index": index,
+                        "prompt": prompt,
+                        "direct_leak": result["direct_leak"],
+                        "visible_direct_leak": result["visible_direct_leak"],
+                        "blocked_by_guard": result["blocked_by_guard"],
+                        "blocked_by_filter": result["blocked_by_filter"],
+                        "raw_response": result["raw_response"],
+                        "final_response": result["final_response"],
+                        "error": result["error"],
+                        "error_message": result["error_message"],
+                        "elapsed": elapsed,
+                    }
+                )
 
             total = len(prompts)
 
             summary_key = f"{dataset_name}_level_{level}"
             summary[summary_key] = {
+                "provider": provider,
+                "model": model_name,
                 "dataset": dataset_name,
                 "level": level,
                 "defense": defense,
                 "total": total,
                 "direct_leak": direct_count,
-                "transformed_leak": transformed_count,
-                "blocked_guard": blocked_guard,
-                "blocked_filter": blocked_filter,
+                "visible_direct_leak": visible_direct_count,
+                "blocked_guard": blocked_guard_count,
+                "blocked_filter": blocked_filter_count,
                 "errors": error_count,
                 "direct_asr": round(direct_count / total * 100, 2),
-                "transformed_asr": round(transformed_count / total * 100, 2)
+                "visible_direct_asr": round(visible_direct_count / total * 100, 2),
             }
 
             print(
                 f"Level {level}: "
                 f"Direct {direct_count}/{total}, "
-                f"Transformed {transformed_count}/{total}, "
+                f"Visible {visible_direct_count}/{total}, "
+                f"Guard {blocked_guard_count}/{total}, "
+                f"Filter {blocked_filter_count}/{total}, "
                 f"Errors {error_count}/{total}"
             )
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_model_name = model_name.replace("/", "_").replace(":", "_")
 
-    results_file = os.path.join(OUTPUT_DIR, f"results_{timestamp}.json")
-    with open(results_file, "w", encoding="utf-8") as f:
-        json.dump({
-            "summary": summary,
-            "results": all_results
-        }, f, indent=2, ensure_ascii=False)
+    payload = {
+        "run_metadata": {
+            "timestamp": timestamp,
+            "provider": provider,
+            "model": model_name,
+            "ignore_instructions_samples": IGNORE_INSTRUCTIONS_SAMPLES,
+            "use_all_summarization_samples": USE_ALL_SUMMARIZATION_SAMPLES,
+            "summarization_samples": SUMMARIZATION_SAMPLES,
+            "sample_seed": SAMPLE_SEED,
+            "datasets": [
+                {
+                    "name": dataset["name"],
+                    "hf_name": dataset["hf_name"],
+                    "split": dataset["split"],
+                    "sample_size": dataset["sample_size"],
+                    "sampling_seed": dataset["sampling_seed"],
+                }
+                for dataset in datasets
+            ],
+        },
+        "summary": summary,
+        "results": all_results,
+    }
+
+    results_file = OUTPUT_DIR / f"results_{provider}_{safe_model_name}_{timestamp}.json"
+    with results_file.open("w", encoding="utf-8") as file:
+        json.dump(payload, file, indent=2, ensure_ascii=False)
 
     print(f"\nSaved JSON to {results_file}")
 
-    csv_file = os.path.join(OUTPUT_DIR, f"summary_{timestamp}.csv")
-    with open(csv_file, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            "Dataset", "Level", "Defense",
-            "Direct ASR (%)", "Transformed ASR (%)",
-            "Blocked Guard", "Blocked Filter", "Errors"
-        ])
+    csv_file = OUTPUT_DIR / f"summary_{provider}_{safe_model_name}_{timestamp}.csv"
+    with csv_file.open("w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(
+            [
+                "Provider",
+                "Model",
+                "Dataset",
+                "Level",
+                "Defense",
+                "Direct ASR (%)",
+                "Visible Direct ASR (%)",
+                "Blocked Guard",
+                "Blocked Filter",
+                "Errors",
+            ]
+        )
 
-        for data in summary.values():
-            writer.writerow([
-                data["dataset"],
-                data["level"],
-                data["defense"],
-                data["direct_asr"],
-                data["transformed_asr"],
-                data["blocked_guard"],
-                data["blocked_filter"],
-                data["errors"]
-            ])
+        for item in summary.values():
+            writer.writerow(
+                [
+                    item["provider"],
+                    item["model"],
+                    item["dataset"],
+                    item["level"],
+                    item["defense"],
+                    item["direct_asr"],
+                    item["visible_direct_asr"],
+                    item["blocked_guard"],
+                    item["blocked_filter"],
+                    item["errors"],
+                ]
+            )
 
     print(f"Saved CSV to {csv_file}")
 
