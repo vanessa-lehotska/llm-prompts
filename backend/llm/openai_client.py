@@ -20,15 +20,24 @@ def call_openai_api(
     temperature: float = 0.7,
     max_tokens: int = 500,
 ):
+    from openai import error as openai_error
     client = get_openai_client()
     model_name = get_model_name()
 
-    return client.chat.completions.create(
-        model=model_name,
-        messages=messages,
-        temperature=temperature,
-        max_tokens=max_tokens,
-    )
+    try:
+        return client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+    except openai_error.RateLimitError:
+        return {"error": "API key limit reached. Please try again later."}
+    except openai_error.InvalidRequestError as e:
+        if "maximum context length" in str(e):
+            return {"error": "Token limit exceeded. Please shorten your input."}
+        else:
+            raise
 
 
 def extract_openai_text(response) -> str:
