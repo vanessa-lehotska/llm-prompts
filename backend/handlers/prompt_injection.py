@@ -7,7 +7,7 @@ from config import get_level_config, get_mode_config
 from defenses import (
     check_secret_match,
     detect_prompt_injection_attempt,
-    filter_response,
+    output_guard,
 )
 from llm.provider import call_llm
 from models import ChatRequest, ChatResponse
@@ -72,7 +72,7 @@ async def handle_prompt_injection(
     content = call_llm(messages, llm_provider)
 
     if defense in ["output_guard", "combined"]:
-        content = filter_response(content, secret)
+        content = output_guard(content, secret)
 
     return ChatResponse(
         response=content,
